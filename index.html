@@ -1,0 +1,1117 @@
+@
+<!doctype html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Видео: 1–28 • Динамический план + умный таймер</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0f1222;
+      --panel: #171a2e;
+      --muted: #8d93b5;
+      --text: #e7e9ff;
+      --acc: #6c7bff;
+      --acc2: #4ce0b3;
+      --danger: #ff6b6b;
+      --ok: #48d28d;
+      --warn: #ffcc66;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 80% -10%, #1b1f3b 0%, #0f1222 55%) fixed;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: linear-gradient(180deg, rgba(15, 18, 34, .95), rgba(15, 18, 34, .75));
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #262a4a;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px 16px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav h1 {
+      font-size: 18px;
+      margin: 0 10px 0 0;
+      color: #cfd3ff
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .tab-btn {
+      border: 1px solid #2a2f55;
+      background: #151936;
+      color: #cfd3ff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(180deg, #2a2f55, #202552);
+      border-color: #3b4180
+    }
+
+    main .wrap {
+      padding-top: 16px
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(12, 1fr);
+    }
+
+    .card {
+      grid-column: span 12;
+      background: linear-gradient(180deg, #151936, #11142b);
+      border: 1px solid #262a4a;
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .02)
+    }
+
+    .card h2 {
+      margin: .1rem 0 .6rem;
+      font-size: 18px
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center
+    }
+
+    .grow {
+      flex: 1
+    }
+
+    .muted {
+      color: var(--muted)
+    }
+
+    .kpi {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap
+    }
+
+    .kpi .pill {
+      background: #131733;
+      border: 1px solid #2a2f55;
+      border-radius: 12px;
+      padding: 10px 12px;
+      min-width: 140px
+    }
+
+    input[type="number"],
+    input[type="text"],
+    input[type="month"] {
+      background: #0f1330;
+      border: 1px solid #2a2f55;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      outline: none;
+      min-width: 110px;
+    }
+
+    button {
+      background: linear-gradient(180deg, #6c7bff, #4f5efc);
+      color: #fff;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: .15s transform ease;
+      box-shadow: 0 6px 20px rgba(108, 123, 255, .25)
+    }
+
+    button:active {
+      transform: translateY(1px)
+    }
+
+    button.ghost {
+      background: #14183a;
+      border: 1px solid #2a2f55;
+      box-shadow: none;
+      color: #cbd0ff
+    }
+
+    button.warn {
+      background: linear-gradient(180deg, #ff9b4d, #ff7a3d);
+      box-shadow: 0 6px 20px rgba(255, 154, 77, .25)
+    }
+
+    button.danger {
+      background: linear-gradient(180deg, #ff6b6b, #ff4d4d);
+      box-shadow: 0 6px 20px rgba(255, 107, 107, .25)
+    }
+
+    .progress {
+      height: 14px;
+      width: 100%;
+      background: #0f1330;
+      border: 1px solid #2a2f55;
+      border-radius: 999px;
+      overflow: hidden
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--acc), var(--acc2));
+      transition: width .4s ease
+    }
+
+    .stat {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center
+    }
+
+    .stat .big {
+      font-size: 32px;
+      font-weight: 700
+    }
+
+    .timer {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-variant-numeric: tabular-nums;
+      padding: 12px 14px;
+      background: #0f1330;
+      border: 1px solid #2a2f55;
+      border-radius: 12px
+    }
+
+    .timer .time {
+      font-size: 28px;
+      min-width: 140px;
+      text-align: center
+    }
+
+    .badge {
+      padding: 6px 10px;
+      background: #122046;
+      border: 1px solid #2a2f55;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #cfd3ff
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 10px
+    }
+
+    thead th {
+      font-weight: 600;
+      text-align: left;
+      color: #b8bef5;
+      font-size: 13px;
+      padding: 0 10px
+    }
+
+    tbody tr {
+      background: #121635;
+      border: 1px solid #262a4a
+    }
+
+    tbody tr td {
+      padding: 12px 10px
+    }
+
+    tbody tr td:first-child {
+      border-radius: 10px 0 0 10px
+    }
+
+    tbody tr td:last-child {
+      border-radius: 0 10px 10px 0
+    }
+
+    .status {
+      font-weight: 700
+    }
+
+    .ok {
+      color: var(--ok)
+    }
+
+    .warnc {
+      color: var(--warn)
+    }
+
+    .bad {
+      color: var(--danger)
+    }
+
+    .right {
+      text-align: right
+    }
+
+    .sep {
+      height: 1px;
+      background: #262a4a;
+      margin: 10px 0
+    }
+
+    .quote {
+      font-style: italic;
+      color: #cfd3ff;
+      opacity: .9
+    }
+
+    .footer-note {
+      color: #98a0d8;
+      font-size: 12px
+    }
+
+    .mini {
+      font-size: 12px;
+      color: #b8bef5
+    }
+
+    .mono {
+      font-variant-numeric: tabular-nums
+    }
+
+    @media (min-width:860px) {
+      .span-6 {
+        grid-column: span 6
+      }
+
+      .span-4 {
+        grid-column: span 4
+      }
+
+      .span-8 {
+        grid-column: span 8
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap nav">
+      <h1>Видео: 1–28 • Динамический план</h1>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="focus">Фокус & Таймер</button>
+        <button class="tab-btn" data-tab="plan">План 1–28</button>
+      </div>
+      <div class="grow"></div>
+      <span class="badge" id="streakBadge">🔥 Стик: 0</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <!-- TAB: Focus -->
+      <section id="tab-focus" class="grid">
+        <div class="card span-8">
+          <h2>Таймер работы</h2>
+          <div class="row">
+            <div class="timer">
+              <span class="time mono" id="timeDisplay">00:00:00</span>
+              <button id="startBtn">Старт</button>
+              <button id="pauseBtn" class="ghost">Пауза</button>
+              <button id="finishVideoBtn" title="Сохранить время на видео и зачесть +1">Готово (+1 видео)</button>
+              <button id="resetBtn" class="warn">Сброс</button>
+            </div>
+            <div class="kpi">
+              <div class="pill">
+                <div class="muted">Сессий завершено</div>
+                <div class="stat"><span id="sessionsDone" class="big">0</span><span class="muted">шт</span></div>
+              </div>
+              <div class="pill">
+                <div class="muted">Видео сегодня</div>
+                <div class="stat"><span id="videosToday" class="big">0</span><span class="muted">шт</span></div>
+              </div>
+              <div class="pill">
+                <div class="muted">Время за день</div>
+                <div class="stat"><span id="minutesToday" class="big">0</span><span class="muted">мин</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="sep"></div>
+          <div class="row">
+            <div class="grow">
+              <div class="muted">Прогресс на сегодня (динамический план)</div>
+              <div class="progress">
+                <div id="dayBar" class="bar"></div>
+              </div>
+              <div class="row" style="margin-top:8px">
+                <span>Смонтировано: <b id="videosTodayInline">0</b> из <b id="dailyGoalLabel">0</b></span>
+                <div class="grow"></div>
+                <button id="plus1" class="ghost" title="Добавить видео без фиксации времени">+1 видео</button>
+                <button id="minus1" class="ghost">−1</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card span-4">
+          <h2>Тайминг видео (сегодня)</h2>
+          <div class="kpi">
+            <div class="pill">
+              <div class="muted">Последнее видео</div>
+              <div class="stat"><span id="lastVideoMin" class="big">—</span><span class="muted">мин</span></div>
+            </div>
+            <div class="pill">
+              <div class="muted">Среднее</div>
+              <div class="stat"><span id="avgVideoMin" class="big">—</span><span class="muted">мин</span></div>
+            </div>
+            <div class="pill">
+              <div class="muted">Лучшее / худшее</div>
+              <div class="stat"><span id="bestWorst" class="big">—</span><span class="muted">мин</span></div>
+            </div>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <div class="pill">
+              <div class="muted">Видео-минут за день</div>
+              <div class="stat"><span id="videoMinutesToday" class="big">0</span><span class="muted">мин</span></div>
+            </div>
+            <div class="pill">
+              <div class="muted">Мин/видео ↔ VPH</div>
+              <div class="stat"><span id="efficiency" class="big">—</span><span class="muted"></span></div>
+            </div>
+          </div>
+          <p class="mini" id="targetVideoHint">Цель: <b id="targetVideoMinLabel">10</b> мин/видео (<span
+              id="deltaLabel">—</span>)</p>
+          <div class="sep"></div>
+          <p class="footer-note">Кнопка «Готово (+1 видео)» сохраняет время текущего таймера и сразу запускает следующий
+            отсчёт.</p>
+        </div>
+
+        <div class="card span-6">
+          <h2>Сводка периода (1–28)</h2>
+          <div class="kpi">
+            <div class="pill">
+              <div class="muted">Цель на период</div>
+              <div class="stat"><span id="planTotal" class="big">270</span><span class="muted">видео</span></div>
+            </div>
+            <div class="pill">
+              <div class="muted">Готово</div>
+              <div class="stat"><span id="doneTotal" class="big">0</span><span class="muted">видео</span></div>
+            </div>
+            <div class="pill">
+              <div class="muted">Осталось до цели</div>
+              <div class="stat"><span id="leftTotal" class="big">270</span><span class="muted">видео</span></div>
+            </div>
+            <div class="pill">
+              <div class="muted">Прогресс</div>
+              <div class="stat"><span id="progressPct" class="big">0%</span><span class="muted"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card span-6">
+          <h2>Настройки</h2>
+          <div class="row">
+            <label>Месяц:
+              <input type="month" id="monthInput">
+            </label>
+            <label>Дневной базовый план:
+              <input type="number" id="dailyGoalInput" min="0" step="1" placeholder="например 10">
+            </label>
+            <label>Цель на период (≥270):
+              <input type="number" id="targetTotalInput" min="270" step="1" placeholder="по умолчанию 270">
+            </label>
+            <label>Целевое время на видео (мин):
+              <input type="number" id="targetVideoMinInput" min="1" step="1" placeholder="например 10">
+            </label>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <label><input type="checkbox" id="autoAdaptInput" checked> Авто-адаптация плана</label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button id="applySettings">Применить</button>
+            <button id="recalcNow" class="ghost">Пересчитать план сейчас</button>
+            <button id="resetAll" class="danger">Сбросить все данные</button>
+            <div class="grow"></div>
+            <button id="exportBtn" class="ghost">Экспорт JSON</button>
+            <input type="file" id="importFile" accept="application/json" style="display:none">
+            <button id="importBtn" class="ghost">Импорт JSON</button>
+          </div>
+          <p class="footer-note">План динамически меняется для оставшихся дней, чтобы выйти на цель периода.
+            Перевыполнение — ок 👍</p>
+        </div>
+
+        <div class="card span-12">
+          <h2>Динамика продуктивности</h2>
+          <div style="height:250px; width:100%"><canvas id="prodChart"></canvas></div>
+        </div>
+      </section>
+
+      <!-- TAB: Plan -->
+      <section id="tab-plan" class="grid" style="display:none">
+        <div class="card">
+          <h2>План 1–28 • <span id="periodLabel">—</span></h2>
+          <div class="row">
+            <div class="muted">Даты: <span id="periodRange">—</span></div>
+            <div class="grow"></div>
+            <span class="mini">Цель периода: <b id="goalInline">270</b></span>
+            <button id="prevMonth" class="ghost">← Пред. месяц</button>
+            <button id="nextMonth" class="ghost">След. месяц →</button>
+            <button id="autoDistribute" class="ghost"
+              title="Равномерно распределить по оставшимся дням">Авто-распределить</button>
+          </div>
+          <div class="sep"></div>
+          <div style="overflow:auto">
+            <table id="planTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Дата</th>
+                  <th>День недели</th>
+                  <th class="right">План</th>
+                  <th class="right">Выложено</th>
+                  <th class="right">Осталось</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody><!-- rows injected --></tbody>
+              <tfoot>
+                <tr>
+                  <td></td>
+                  <td></td>
+                  <td class="right"><b>ИТОГО:</b></td>
+                  <td class="right" id="tPlan">0</td>
+                  <td class="right" id="tDone">0</td>
+                  <td class="right" id="tLeft">0</td>
+                  <td id="tStatus">—</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <canvas id="confetti"
+    style="position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .4s ease"></canvas>
+
+  <script>
+    /* ======== Константы / хранилище ======== */
+    const KEY_V2 = 'video28.month.v2';
+    const KEY_V1 = 'video28.month.v1'; // миграция с прошлой версии
+    const RU_DAYS_FULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+
+    const state = loadState();
+    let timerInt = null, startTs = null, accumulatedMs = 0;
+
+    /* ======== Состояние по умолчанию и загрузка ======== */
+    function defaultState() {
+      const now = new Date();
+      const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      return {
+        periodYM: ym,           // YYYY-MM
+        dailyGoal: 10,          // базовый план на день
+        targetTotal: 270,       // цель периода (можно >270)
+        targetVideoMin: 10,     // целевое время на видео, мин
+        autoAdapt: true,        // авто-адаптация плана
+        sessionsDone: 0,
+        minutesByDate: {},      // {'YYYY-MM-DD': minutes} — общее время работы
+        videosByDate: {},       // {'YYYY-MM-DD': count}
+        planByDate: {},         // {'YYYY-MM-DD': planned}
+        videoDurationsByDate: {}// {'YYYY-MM-DD': [min, min, ...]} — время на каждое видео
+      };
+    }
+    function loadState() {
+      // v2
+      const v2raw = localStorage.getItem(KEY_V2);
+      if (v2raw) {
+        try { return JSON.parse(v2raw); } catch (e) { }
+      }
+      // миграция с v1 (если есть)
+      const v1raw = localStorage.getItem(KEY_V1);
+      if (v1raw) {
+        try {
+          const old = JSON.parse(v1raw);
+          const fresh = defaultState();
+          fresh.periodYM = old.periodYM || fresh.periodYM;
+          fresh.dailyGoal = old.dailyGoal ?? fresh.dailyGoal;
+          fresh.sessionsDone = old.sessionsDone || 0;
+          fresh.minutesByDate = old.minutesByDate || {};
+          fresh.videosByDate = old.videosByDate || {};
+          fresh.planByDate = old.planByDate || {};
+          save(fresh);
+          return fresh;
+        } catch (e) { }
+      }
+      const d = defaultState(); save(d); return d;
+    }
+    function save(s = state) { localStorage.setItem(KEY_V2, JSON.stringify(s)); }
+
+    /* ======== Утилиты дат ======== */
+    function ymToDates(ym) { // 1..28 числа месяца
+      const [y, m] = ym.split('-').map(Number);
+      const res = [];
+      for (let d = 1; d <= 28; d++) { const dt = new Date(y, m - 1, d); res.push(dt.toISOString().slice(0, 10)); }
+      return res;
+    }
+    function addMonthsYM(ym, delta) {
+      let [y, m] = ym.split('-').map(Number);
+      m += delta;
+      while (m < 1) { m += 12; y--; }
+      while (m > 12) { m -= 12; y++; }
+      return `${y}-${String(m).padStart(2, '0')}`;
+    }
+    function todayStr() {
+      const d = new Date();
+      const offset = d.getTimezoneOffset() * 60000;
+      return new Date(d.getTime() - offset).toISOString().slice(0, 10);
+    }
+
+    /* ======== DOM ======== */
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+    /* ======== Навигация ======== */
+    $$('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        $$('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        $('#tab-focus').style.display = tab === 'focus' ? '' : 'none';
+        $('#tab-plan').style.display = tab === 'plan' ? '' : 'none';
+      });
+    });
+
+    /* ======== ТАЙМЕР ======== */
+    function updateTimeDisplay(ms) {
+      const sec = Math.floor(ms / 1000);
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      $('#timeDisplay').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+    function tick() {
+      const now = Date.now();
+      const sessionMs = accumulatedMs + (startTs ? (now - startTs) : 0);
+      updateTimeDisplay(sessionMs);
+    }
+
+    function updateTimerButtons() {
+      const isRunning = !!timerInt;
+      const hasTime = accumulatedMs > 0 || !!startTs;
+
+      $('#startBtn').disabled = isRunning;
+      $('#startBtn').textContent = (accumulatedMs > 0 && !isRunning) ? 'Продолжить' : 'Старт';
+
+      $('#pauseBtn').disabled = !isRunning;
+
+      // Бледно-подсветка если на паузе
+      if (!isRunning && accumulatedMs > 0) {
+        $('.timer').style.borderColor = 'var(--warn)';
+      } else if (isRunning) {
+        $('.timer').style.borderColor = 'var(--acc)';
+      } else {
+        $('.timer').style.borderColor = 'var(--panel)';
+      }
+    }
+
+    $('#startBtn').onclick = () => {
+      if (timerInt) return;
+      startTs = Date.now();
+      timerInt = setInterval(tick, 250);
+      playPing();
+      updateTimerButtons();
+    };
+
+    $('#pauseBtn').onclick = () => {
+      if (!timerInt) return;
+
+      accumulatedMs += Date.now() - startTs;
+      clearInterval(timerInt);
+      timerInt = null;
+      startTs = null;
+
+      save();
+      refreshFocus();
+      updateTimerButtons();
+    };
+
+    $('#resetBtn').onclick = () => {
+      clearInterval(timerInt);
+      timerInt = null;
+      startTs = null;
+      accumulatedMs = 0;
+      updateTimeDisplay(0);
+      updateTimerButtons();
+    };
+
+    /* —— Завершить видео: добавить +1 и записать его длительность —— */
+    $('#finishVideoBtn').onclick = () => {
+      const ds = todayStr();
+      const now = Date.now();
+      const sessionMs = accumulatedMs + (startTs ? (now - startTs) : 0);
+      const minutes = Math.max(0, Math.round(sessionMs / 60000));
+
+      // добавим это время в общий счётчик
+      state.minutesByDate[ds] = (state.minutesByDate[ds] || 0) + minutes;
+
+      // запишем длительность видео
+      if (!state.videoDurationsByDate[ds]) state.videoDurationsByDate[ds] = [];
+      state.videoDurationsByDate[ds].push(minutes);
+
+      // +1 видео
+      state.videosByDate[ds] = (state.videosByDate[ds] || 0) + 1;
+
+      // Сброс накопленного для этого видео
+      accumulatedMs = 0;
+
+      // авто: запускаем таймер для следующего видео с нуля
+      startTs = Date.now();
+      if (!timerInt) timerInt = setInterval(tick, 250);
+      updateTimeDisplay(0);
+
+      save();
+      if (state.autoAdapt) rebalancePlanDynamic(); // динамическая подстройка
+      refreshAll();
+      celebrateIfGoal();
+      playDong();
+      updateTimerButtons();
+    };
+
+    /* ======== Плюс/минус видео без времени ======== */
+    $('#plus1').onclick = () => { adjustVideosToday(1); };
+    $('#minus1').onclick = () => { adjustVideosToday(-1); };
+    function adjustVideosToday(delta) {
+      const ds = todayStr();
+      state.videosByDate[ds] = Math.max(0, (state.videosByDate[ds] || 0) + delta);
+      save();
+      if (state.autoAdapt) rebalancePlanDynamic();
+      refreshAll();
+      celebrateIfGoal();
+    }
+
+    function celebrateIfGoal() {
+      const ds = todayStr();
+      const goal = dayPlan(ds);
+      const done = state.videosByDate[ds] || 0;
+      if (goal > 0 && done >= goal) fireConfetti();
+    }
+
+    /* ======== ПЛАН ======== */
+    function ensurePlanFilled() {
+      const dates = ymToDates(state.periodYM);
+      dates.forEach(d => { if (state.planByDate[d] == null) state.planByDate[d] = state.dailyGoal; });
+    }
+
+    /* Динамическая подстройка плана: перераспределяем только "сегодня и вперёд" */
+    function rebalancePlanDynamic() {
+      ensurePlanFilled();
+      const dates = ymToDates(state.periodYM);
+      const today = todayStr();
+      // Разделим на прошедшие и оставшиеся относительно сегодня
+      const past = dates.filter(d => d < today);
+      const rest = dates.filter(d => d >= today);
+
+      // План в прошлом не трогаем, но гарантируем что план ≥ факт
+      past.forEach(d => { state.planByDate[d] = Math.max(state.planByDate[d] || 0, state.videosByDate[d] || 0); });
+
+      // Считаем, сколько уже сделано до сегодня
+      const doneSoFar = dates.filter(d => d < today).reduce((s, d) => s + (state.videosByDate[d] || 0), 0);
+      const target = Math.max(270, state.targetTotal || 270);
+
+      // Сколько нужно добрать до цели
+      let remainingNeed = Math.max(0, target - doneSoFar);
+
+      if (rest.length === 0) {
+        save(); return;
+      }
+
+      // Базовая нагрузка — минимум базовый дневной план
+      const base = Math.max(0, state.dailyGoal || 0);
+      const baseSum = base * rest.length;
+
+      // Если до цели нужно меньше, чем базовая сумма — просто ставим везде базу,
+      // фактически выйдем > цели (разрешено).
+      // Если нужно больше — распределяем "перегруз" равномерно поверх базы.
+      let extra = 0;
+      if (remainingNeed > baseSum) {
+        extra = remainingNeed - baseSum;
+      }
+
+      const perExtra = Math.floor(extra / rest.length);
+      const remExtra = extra % rest.length;
+
+      rest.forEach((d, i) => {
+        const done = state.videosByDate[d] || 0;
+        let plan = base + perExtra + (i < remExtra ? 1 : 0);
+        // план не может быть меньше уже сделанного за этот день
+        plan = Math.max(plan, done);
+        state.planByDate[d] = plan;
+      });
+
+      save();
+    }
+
+    function dayPlan(ds) { return Math.max(0, parseInt(state.planByDate[ds] ?? state.dailyGoal, 10)); }
+
+    /* Авто-распределить (ручная кнопка на вкладке План) */
+    $('#autoDistribute').onclick = () => {
+      rebalancePlanDynamic(); refreshAll();
+    };
+    $('#recalcNow').onclick = () => {
+      rebalancePlanDynamic(); refreshAll();
+    };
+
+    /* ======== Таблица ======== */
+    function buildTable() {
+      const tbody = $('#planTable tbody'); tbody.innerHTML = '';
+      const dates = ymToDates(state.periodYM);
+      $('#periodRange').textContent = `${dates[0]} – ${dates[dates.length - 1]}`;
+      $('#periodLabel').textContent = humanYM(state.periodYM);
+      $('#goalInline').textContent = String(Math.max(270, state.targetTotal || 270));
+
+      let sumPlan = 0, sumDone = 0;
+      dates.forEach((ds, i) => {
+        const d = new Date(ds);
+        const plan = dayPlan(ds);
+        const done = Math.max(0, parseInt(state.videosByDate[ds] || 0, 10) || 0);
+        const left = Math.max(0, plan - done);
+        sumPlan += plan; sumDone += done;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${ds}</td>
+      <td>${RU_DAYS_FULL[d.getDay()]}</td>
+      <td class="right"><input data-type="plan" data-date="${ds}" type="number" min="0" step="1" value="${plan}" style="width:90px"/></td>
+      <td class="right"><input data-type="done" data-date="${ds}" type="number" min="0" step="1" value="${done}" style="width:90px"/></td>
+      <td class="right">${left}</td>
+      <td class="status">${statusBadge(plan, done)}</td>
+    `;
+        tbody.appendChild(tr);
+      });
+
+      const target = Math.max(270, state.targetTotal || 270);
+      const leftToGoal = Math.max(0, target - sumDone);
+
+      $('#tPlan').textContent = sumPlan;
+      $('#tDone').textContent = sumDone;
+      $('#tLeft').textContent = leftToGoal;
+      $('#tStatus').innerHTML = progressStatus(sumDone, target);
+
+      // обработчики ввода
+      $$('#planTable input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const ds = inp.dataset.date;
+          const val = Math.max(0, parseInt(inp.value || 0, 10));
+          if (inp.dataset.type === 'plan') { state.planByDate[ds] = val; }
+          else { state.videosByDate[ds] = val; }
+          save();
+          if (state.autoAdapt && inp.dataset.type === 'done') rebalancePlanDynamic();
+          refreshAll();
+        });
+      });
+    }
+
+    function statusBadge(plan, done) {
+      if (plan === 0 && done === 0) return `<span class="muted">—</span>`;
+      if (done === 0) return `<span class="bad">Стартуй</span>`;
+      if (done < plan) return `<span class="warnc">В процессе</span>`;
+      if (done === plan) return `<span class="ok">Готово</span>`;
+      if (done > plan) return `<span class="ok">Сверх плана</span>`;
+      return `<span class="muted">—</span>`;
+    }
+    function progressStatus(done, goal) {
+      if (goal === 0) return '<span class="muted">—</span>';
+      const pct = Math.round(done / goal * 100);
+      let cls = 'warnc', label = 'В пути';
+      if (pct > 100) { cls = 'ok'; label = 'Сверх цели'; }
+      else if (pct >= 100) { cls = 'ok'; label = 'Цель достигнута'; }
+      else if (pct >= 75) { cls = 'ok'; label = 'Отлично'; }
+      else if (pct < 25) { cls = 'bad'; label = 'Начинай'; }
+      return `<span class="${cls}">${label} • ${pct}%</span>`;
+    }
+    function humanYM(ym) {
+      const [y, m] = ym.split('-').map(Number);
+      const names = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+      return `${names[m - 1]} ${y}`;
+    }
+
+    /* ======== МЕТРИКИ ТАЙМЕРА / ЭФФЕКТИВНОСТЬ ======== */
+    function sum(arr) { return arr.reduce((a, b) => a + b, 0); }
+    function metricsToday() {
+      const ds = todayStr();
+      const vids = state.videosByDate[ds] || 0;
+      const minDay = state.minutesByDate[ds] || 0;
+      const arr = state.videoDurationsByDate[ds] || [];
+      const videoMin = sum(arr);
+      const last = arr.length ? arr[arr.length - 1] : null;
+      const avg = arr.length ? Math.round(videoMin / arr.length) : null;
+      const best = arr.length ? Math.min(...arr) : null;
+      const worst = arr.length ? Math.max(...arr) : null;
+      const vph = (minDay > 0) ? (vids / (minDay / 60)) : null; // видео в час
+      const mpv = (vids > 0) ? Math.round((videoMin / vids) * 10) / 10 : null; // мин/видео по фактическим видеоминутам
+      return { vids, minDay, arr, videoMin, last, avg, best, worst, vph, mpv };
+    }
+
+    /* ======== Конфетти ======== */
+    function fireConfetti(duration = 1600, count = 120) {
+      const canvas = $('#confetti'); const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const { innerWidth: w, innerHeight: h } = window;
+      canvas.width = w * dpr; canvas.height = h * dpr; ctx.scale(dpr, dpr);
+      const parts = Array.from({ length: count }).map(() => ({
+        x: Math.random() * w, y: -20, r: 2 + Math.random() * 4, vx: (Math.random() - .5) * 2, vy: 2 + Math.random() * 3, rot: Math.random() * Math.PI
+      }));
+      let start = null; canvas.style.opacity = 1;
+      function step(ts) {
+        start ??= ts; const t = ts - start;
+        ctx.clearRect(0, 0, w, h);
+        parts.forEach(p => {
+          p.x += p.vx; p.y += p.vy; p.vy += 0.03; p.rot += 0.1;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+          ctx.fillStyle = `hsl(${(p.x + p.y) % 360},90%,60%)`;
+          ctx.fillRect(-p.r, -p.r, p.r * 2, p.r * 2);
+          ctx.restore();
+        });
+        if (t < duration) requestAnimationFrame(step); else canvas.style.opacity = 0;
+      }
+      requestAnimationFrame(step);
+    }
+
+    /* ======== Настройки ======== */
+    $('#applySettings').onclick = () => {
+      const ym = $('#monthInput').value || state.periodYM;
+      state.periodYM = ym;
+      const dg = parseInt($('#dailyGoalInput').value || state.dailyGoal, 10);
+      state.dailyGoal = isFinite(dg) ? Math.max(0, dg) : state.dailyGoal;
+      const tt = parseInt($('#targetTotalInput').value || state.targetTotal, 10);
+      state.targetTotal = isFinite(tt) ? Math.max(270, tt) : Math.max(270, state.targetTotal || 270);
+      const tv = parseInt($('#targetVideoMinInput').value || state.targetVideoMin, 10);
+      state.targetVideoMin = isFinite(tv) ? Math.max(1, tv) : state.targetVideoMin;
+      state.autoAdapt = $('#autoAdaptInput').checked;
+      ensurePlanFilled();
+      if (state.autoAdapt) rebalancePlanDynamic();
+      save(); refreshAll();
+    };
+
+    $('#resetAll').onclick = () => {
+      if (confirm('Удалить все сохранённые данные?')) {
+        localStorage.removeItem(KEY_V2); Object.assign(state, defaultState());
+        save(); refreshAll();
+      }
+    };
+    $('#prevMonth').onclick = () => { state.periodYM = addMonthsYM(state.periodYM, -1); ensurePlanFilled(); if (state.autoAdapt) rebalancePlanDynamic(); save(); refreshAll(); };
+    $('#nextMonth').onclick = () => { state.periodYM = addMonthsYM(state.periodYM, 1); ensurePlanFilled(); if (state.autoAdapt) rebalancePlanDynamic(); save(); refreshAll(); };
+
+    /* ======== Экспорт / Импорт ======== */
+    $('#exportBtn').onclick = () => {
+      const data = JSON.stringify(state, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'video-1-28-dynamic-plan.json'; a.click();
+      URL.revokeObjectURL(url);
+    };
+    $('#importBtn').onclick = () => $('#importFile').click();
+    $('#importFile').addEventListener('change', e => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const obj = JSON.parse(reader.result);
+          if (!obj || typeof obj !== 'object') throw new Error('Неверный формат');
+          localStorage.setItem(KEY_V2, JSON.stringify(obj));
+          Object.assign(state, obj);
+          refreshAll();
+          alert('Импорт завершён ✅');
+        } catch (err) { alert('Ошибка импорта: ' + err.message); }
+      };
+      reader.readAsText(file);
+    });
+
+    /* ======== Обновление UI ======== */
+    function refreshFocus() {
+      const ds = todayStr();
+      const done = state.videosByDate[ds] || 0;
+      const minDay = state.minutesByDate[ds] || 0;
+      $('#videosToday').textContent = done;
+      $('#videosTodayInline').textContent = done;
+      $('#minutesToday').textContent = minDay;
+      $('#sessionsDone').textContent = state.sessionsDone;
+
+      const goalToday = dayPlan(ds);
+      $('#dailyGoalLabel').textContent = goalToday;
+      const pct = goalToday > 0 ? Math.min(100, Math.round((done / goalToday) * 100)) : (done > 0 ? 100 : 0);
+      $('#dayBar').style.width = pct + '%';
+
+      // Стик
+      $('#streakBadge').textContent = `🔥 Стик: ${calcStreak()}`;
+
+      // Метрики таймера
+      const m = metricsToday();
+      $('#lastVideoMin').textContent = m.last == null ? '—' : m.last;
+      $('#avgVideoMin').textContent = m.avg == null ? '—' : m.avg;
+      $('#bestWorst').textContent = m.best == null ? '—' : `${m.best}/${m.worst}`;
+      $('#videoMinutesToday').textContent = m.videoMin || 0;
+      const vph = m.vph == null ? '—' : (Math.round(m.vph * 10) / 10);
+      const mpv = m.mpv == null ? '—' : m.mpv;
+      $('#efficiency').textContent = mpv === '—' ? '—' : `${mpv} мин • ${vph} vph`;
+
+      // Целевое время на видео и дельта
+      $('#targetVideoMinLabel').textContent = state.targetVideoMin || 10;
+      if (m.mpv && state.targetVideoMin) {
+        const delta = Math.round((m.mpv - state.targetVideoMin) * 10) / 10;
+        const arrow = delta > 0 ? '↑' : '↓';
+        const txt = delta === 0 ? '= цель' : `${arrow} ${Math.abs(delta)} мин`;
+        $('#deltaLabel').textContent = txt;
+      } else {
+        $('#deltaLabel').textContent = '—';
+      }
+
+      // Сводка периода
+      const dates = ymToDates(state.periodYM);
+      let sumDone = 0; dates.forEach(d => sumDone += (state.videosByDate[d] || 0));
+      const target = Math.max(270, state.targetTotal || 270);
+      const left = Math.max(0, target - sumDone);
+      $('#planTotal').textContent = target;
+      $('#doneTotal').textContent = sumDone;
+      $('#leftTotal').textContent = left;
+      const progress = target > 0 ? Math.round(sumDone / target * 100) : 0;
+      $('#progressPct').textContent = progress + '%';
+    }
+
+    function refreshSettings() {
+      $('#monthInput').value = state.periodYM;
+      $('#dailyGoalInput').value = state.dailyGoal;
+      $('#targetTotalInput').value = state.targetTotal;
+      $('#targetVideoMinInput').value = state.targetVideoMin;
+      $('#autoAdaptInput').checked = !!state.autoAdapt;
+    }
+    function refreshTable() { buildTable(); }
+    function refreshAll() { ensurePlanFilled(); if (state.autoAdapt) rebalancePlanDynamic(); refreshSettings(); refreshFocus(); refreshTable(); updateChart(); }
+
+    /* ======== Графики (Chart.js) ======== */
+    let myChart = null;
+    function updateChart() {
+      const ctx = $('#prodChart');
+      if (!ctx) return;
+      const days = Object.keys(state.minutesByDate).sort();
+      // возьмем последние 14 дней для наглядности, или все если мало
+      const labels = days.slice(-14);
+      const dataMins = labels.map(d => state.minutesByDate[d] || 0);
+      const dataVids = labels.map(d => state.videosByDate[d] || 0);
+
+      if (myChart) {
+        myChart.data.labels = labels;
+        myChart.data.datasets[0].data = dataMins;
+        myChart.data.datasets[1].data = dataVids;
+        myChart.update();
+      } else {
+        myChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              { label: 'Минуты', data: dataMins, yAxisID: 'y', backgroundColor: 'rgba(108, 123, 255, 0.5)', borderColor: '#6c7bff', borderWidth: 1 },
+              { label: 'Видео', data: dataVids, yAxisID: 'y1', type: 'line', borderColor: '#4ce0b3', tension: 0.3, pointBackgroundColor: '#4ce0b3' }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#b8bef5' } } },
+            scales: {
+              x: { ticks: { color: '#8d93b5' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+              y: { type: 'linear', position: 'left', ticks: { color: '#8d93b5' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+              y1: { type: 'linear', position: 'right', ticks: { color: '#4ce0b3' }, grid: { drawOnChartArea: false } }
+            }
+          }
+        });
+      }
+    }
+
+    /* ======== Вспомогательные ======== */
+    function calcStreak() {
+      // календарный стрик: подряд дни с done>0
+      let streak = 0;
+      let d = new Date(); d.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 90; i++) {
+        const ds = d.toISOString().slice(0, 10);
+        const done = state.videosByDate[ds] || 0;
+        if (done > 0) { streak++; } else { break; }
+        d.setDate(d.getDate() - 1);
+      }
+      return streak;
+    }
+
+
+    /* ======== Звуки ======== */
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playPing() {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+    function playDong() {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+    }
+
+    /* ======== Инициализация ======== */
+    function init() {
+      if (location.hash === '#plan') { $$('.tab-btn')[1].click(); }
+      refreshAll();
+      updateTimerButtons();
+    }
+    init();
+  </script>
+</body>
+
+</html>
