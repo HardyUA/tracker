@@ -537,7 +537,7 @@
     const RU_DAYS_FULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 
     const state = loadState();
-    let timerInt = null, startTs = null;
+    let timerInt = null, startTs = null, accumulatedMs = 0;
 
     /* ======== Состояние по умолчанию и загрузка ======== */
     function defaultState() {
@@ -625,38 +625,80 @@
       const s = sec % 60;
       $('#timeDisplay').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
-    function tick() { const elapsed = Date.now() - startTs; updateTimeDisplay(elapsed); }
+    function tick() {
+      const now = Date.now();
+      const sessionMs = accumulatedMs + (startTs ? (now - startTs) : 0);
+      updateTimeDisplay(sessionMs);
+    }
 
-    $('#startBtn').onclick = () => { if (timerInt) return; startTs = Date.now(); timerInt = setInterval(tick, 250); playPing(); };
-    $('#pauseBtn').onclick = () => {
-      if (!timerInt) return;
-      clearInterval(timerInt); timerInt = null;
-      const elapsedMs = Date.now() - startTs;
-      const minutes = Math.max(0, Math.round(elapsedMs / 60000));
-      const ds = todayStr();
-      state.minutesByDate[ds] = (state.minutesByDate[ds] || 0) + minutes;
-      state.sessionsDone += 1;
-      startTs = null; updateTimeDisplay(0);
-      save(); refreshFocus();
+    function updateTimerButtons() {
+      const isRunning = !!timerInt;
+      const hasTime = accumulatedMs > 0 || !!startTs;
+
+      $('#startBtn').disabled = isRunning;
+      $('#startBtn').textContent = (accumulatedMs > 0 && !isRunning) ? 'Продолжить' : 'Старт';
+
+      $('#pauseBtn').disabled = !isRunning;
+
+      // Бледно-подсветка если на паузе
+      if (!isRunning && accumulatedMs > 0) {
+        $('.timer').style.borderColor = 'var(--warn)';
+      } else if (isRunning) {
+        $('.timer').style.borderColor = 'var(--acc)';
+      } else {
+        $('.timer').style.borderColor = 'var(--panel)';
+      }
+    }
+
+    $('#startBtn').onclick = () => {
+      if (timerInt) return;
+      startTs = Date.now();
+      timerInt = setInterval(tick, 250);
+      playPing();
+      updateTimerButtons();
     };
 
-    $('#resetBtn').onclick = () => { clearInterval(timerInt); timerInt = null; startTs = null; updateTimeDisplay(0); };
+    $('#pauseBtn').onclick = () => {
+      if (!timerInt) return;
+
+      accumulatedMs += Date.now() - startTs;
+      clearInterval(timerInt);
+      timerInt = null;
+      startTs = null;
+
+      save();
+      refreshFocus();
+      updateTimerButtons();
+    };
+
+    $('#resetBtn').onclick = () => {
+      clearInterval(timerInt);
+      timerInt = null;
+      startTs = null;
+      accumulatedMs = 0;
+      updateTimeDisplay(0);
+      updateTimerButtons();
+    };
 
     /* —— Завершить видео: добавить +1 и записать его длительность —— */
     $('#finishVideoBtn').onclick = () => {
       const ds = todayStr();
-      let minutes = 0;
-      if (startTs) {
-        const elapsedMs = Date.now() - startTs;
-        minutes = Math.max(0, Math.round(elapsedMs / 60000));
-        // добавим это время и в общий счётчик
-        state.minutesByDate[ds] = (state.minutesByDate[ds] || 0) + minutes;
-      }
+      const now = Date.now();
+      const sessionMs = accumulatedMs + (startTs ? (now - startTs) : 0);
+      const minutes = Math.max(0, Math.round(sessionMs / 60000));
+
+      // добавим это время в общий счётчик
+      state.minutesByDate[ds] = (state.minutesByDate[ds] || 0) + minutes;
+
       // запишем длительность видео
       if (!state.videoDurationsByDate[ds]) state.videoDurationsByDate[ds] = [];
       state.videoDurationsByDate[ds].push(minutes);
+
       // +1 видео
       state.videosByDate[ds] = (state.videosByDate[ds] || 0) + 1;
+
+      // Сброс накопленного для этого видео
+      accumulatedMs = 0;
 
       // авто: запускаем таймер для следующего видео с нуля
       startTs = Date.now();
@@ -668,6 +710,7 @@
       refreshAll();
       celebrateIfGoal();
       playDong();
+      updateTimerButtons();
     };
 
     /* ======== Плюс/минус видео без времени ======== */
@@ -1065,6 +1108,7 @@
     function init() {
       if (location.hash === '#plan') { $$('.tab-btn')[1].click(); }
       refreshAll();
+      updateTimerButtons();
     }
     init();
   </script>
